@@ -1,21 +1,21 @@
 use crate::{line::Line, PULSAR_ADDRESS};
+use anyhow::{Context, Result};
 use pulsar::{
     executor::Executor, message::proto, producer, Consumer, DeserializeMessage, Pulsar, SubType,
     TokioExecutor,
 };
 use std::fs::File;
-use std::io::{BufRead, BufReader};
+use std::io::prelude::*;
+
 
 /// This
-pub struct BookProducer<Exe: Executor> {
+pub struct BookProducer {
     pub book_title: String,
-    pub producer: producer::Producer<Exe>,
+    pub producer: producer::Producer<TokioExecutor>,
 }
 
-impl<Exe: Executor> BookProducer<Exe> {
-    pub async fn new(
-        book_title: &str,
-    ) -> Result<BookProducer<TokioExecutor>, pulsar::Error> {
+impl BookProducer {
+    pub async fn new(book_title: &str) -> Result<BookProducer, pulsar::Error> {
         let pulsar = Pulsar::builder(PULSAR_ADDRESS, TokioExecutor)
             .build()
             .await?;
@@ -33,17 +33,24 @@ impl<Exe: Executor> BookProducer<Exe> {
             .build()
             .await?;
 
-        Ok(BookProducer::<TokioExecutor> {
+        Ok(BookProducer {
             book_title: book_title.to_string(),
             producer,
         })
     }
 
-    pub async fn stream_book(self) {
+    pub  fn stream_book(self) -> Result<()> {
         let path = format!("books/{}", self.book_title);
-        let reader = BufReader::new(File::open(path).expect("Cannot not open file"));
-        for line in reader.lines() {
-            println!("{}", line.unwrap());
-        }
+        let mut file = File::open(path).context("Cannot not open file")?;
+        let mut contents = String::new();
+        file.read_to_string(&mut contents)?;
+        println!("{}", contents);
+        
+        
+        // let mut bufreader = BufReader::new(file);
+        // for line in bufreader.lines() {
+        //     println!("{}", line.unwrap());
+        // }
+        Ok(())
     }
 }

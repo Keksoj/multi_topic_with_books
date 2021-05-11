@@ -791,6 +791,7 @@ dependencies = [
 name = "multi_topic_with_books"
 version = "0.1.0"
 dependencies = [
+ "anyhow",
  "env_logger",
  "futures",
  "log",
