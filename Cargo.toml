@@ -1,0 +1,16 @@
+[package]
+name = "multi_topic_with_books"
+version = "0.1.0"
+authors = ["Emmanuel Bosquet <bjokac@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+env_logger = "0.8.3"
+futures = "0.3.14"
+log = "0.4.14"
+pulsar = "2.0.1"
+serde = { version = "^1.0", features = ["derive"] }
+serde_json = "^1.0"
+tokio = { version = "1.5.0", features = ["full"] }
