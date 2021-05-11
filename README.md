@@ -1,9 +1,9 @@
-# multi_topic_with_books
+# [Pulsar] multi_topic_with_books
 
-The goal is to test pulsar's abilities with a bit more data than just "ping" and "pong":
-stream three books, each on one topic.
+The goal is to test pulsar's abilities with a bit more data than just "ping" and "pong".
+Let's stream three books on three topics.
 
-The books, as UTF-8 plain text files:
+The books are UTF-8 plain text files:
 
 -   Tolkien's Silmarilion (2300 long lines, 131.000 words)
 -   Goethe's Faust (6000 short lines, 31.000 words)
@@ -18,4 +18,6 @@ Be sure to have a Pulsar server running as standalone on your machine, following
 
     bin/pulsar standalone
 
-Then do `cargo run`.
+Then run the project with
+
+    RUST_LOG=info cargo run

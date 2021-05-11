@@ -49,6 +49,7 @@ impl BookProducer {
             self.producer
                 .send(Line {
                     id: line_count,
+                    book_title: self.book_title.clone(),
                     data: line,
                 })
                 .await?;

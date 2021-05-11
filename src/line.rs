@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Serialize, Deserialize)]
 pub struct Line {
     pub id: usize,
+    pub book_title: String,
     pub data: String,
 }
 

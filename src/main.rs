@@ -41,6 +41,8 @@ async fn main() -> Result<()> {
         debug!("metadata: {:?}", msg.metadata());
         let line = msg.deserialize()?;
         book_consumer.consumer.ack(&msg).await?;
+        info!("received a line with id {}", line.id);
+        book_consumer.process_line(line);
     }
     Ok(())
 }
