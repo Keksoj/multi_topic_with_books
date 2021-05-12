@@ -1,7 +1,14 @@
 use crate::{format_topic_for, line::Line, PULSAR_ADDRESS};
 use anyhow::{Context, Result};
-use log::{debug, error, info};
-use pulsar::{message::proto, producer, Pulsar, SubType, TokioExecutor};
+use futures::Future;
+use log::{debug, info};
+use pulsar::{
+    message::proto,
+    producer,
+    Pulsar,
+    // SubType,
+    TokioExecutor,
+};
 use std::fs::File;
 use std::io::{prelude::*, BufReader};
 
@@ -21,7 +28,7 @@ impl BookProducer {
 
         let producer = pulsar
             .producer()
-            .with_topic(book_title)
+            .with_topic(topic)
             .with_options(producer::ProducerOptions {
                 schema: Some(proto::Schema {
                     r#type: proto::schema::Type::String as i32,
@@ -45,17 +52,21 @@ impl BookProducer {
         let bufreader = BufReader::new(file);
         let mut line_count = 0usize;
         for line in bufreader.lines() {
-            let line = line?;
-            self.producer
-                .send(Line {
-                    id: line_count,
-                    book_title: self.book_title.clone(),
-                    data: line,
-                })
-                .await?;
-            info!("[{}] Sent line #{}", self.book_title, line_count);
+            let line = Line {
+                id: line_count,
+                book_title: self.book_title.clone(),
+                data: line?.clone(),
+            };
+            info!("[producer] Sending line: {}", line);
+            debug!("[producer] the content: {}", line.data);
+            self.producer.send(line).await?;
             line_count += 1;
         }
         Ok(())
+    }
+
+    pub fn return_future(self) -> impl Future {
+        let future = self.stream_book();
+        future
     }
 }

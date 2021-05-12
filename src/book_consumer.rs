@@ -1,17 +1,24 @@
 use crate::{line::Line, PULSAR_ADDRESS};
-use anyhow::{Context, Result};
-use log::{debug, error, info};
-use pulsar::{message::proto, Consumer, DeserializeMessage, Pulsar, SubType, TokioExecutor};
-use std::collections::HashMap;
-use std::io::{prelude::*, BufReader};
+use anyhow::Result;
+// use log::{debug, error, info};
+use pulsar::{
+    // message::proto,
+    Consumer,
+    // DeserializeMessage,
+    Pulsar,
+    SubType,
+    TokioExecutor,
+};
+// use std::io::{prelude::*, BufReader};
 
-// pub struct ReconstructedBook {
-//     title: String,
-//     lines: Vec<Line>,
-// }
+// #[derive(Default)]
+pub struct Book {
+    title: String,
+    lines: Vec<Line>,
+}
 
 pub struct BookConsumer {
-    books: HashMap<String, Vec<Line>>,
+    pub books: Vec<Book>,
     pub consumer: Consumer<Line, TokioExecutor>,
 }
 
@@ -32,12 +39,26 @@ impl BookConsumer {
             .build()
             .await?;
         Ok(BookConsumer {
-            books: HashMap::new(),
+            books: Vec::new(),
             consumer,
         })
     }
 
     pub fn process_line(&mut self, line: Line) {
-        
+        // clone the title to have it available through all checks
+        let title = line.book_title.clone();
+
+        // if the book is already present
+        for book in self.books.iter_mut() {
+            if book.title == title {
+                book.lines.push(line);
+                return;
+            }
+        }
+
+        // Else, create a new book
+        let mut lines = Vec::new();
+        lines.push(line);
+        self.books.push(Book { title, lines });
     }
 }

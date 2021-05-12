@@ -2,8 +2,9 @@ use pulsar::{
     message::Payload, producer, DeserializeMessage, Error as PulsarError, SerializeMessage,
 };
 use serde::{Deserialize, Serialize};
+use std::fmt;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Clone)]
 pub struct Line {
     pub id: usize,
     pub book_title: String,
@@ -27,3 +28,19 @@ impl DeserializeMessage for Line {
         serde_json::from_slice(&payload.data)
     }
 }
+
+impl fmt::Display for Line {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{} #{}", self.book_title, self.id)
+    }
+}
+
+// impl Clone for Line {
+//     fn clone(&self) -> Self {
+//         Self {
+//             id: self.id.clone(),
+//             book_title: self.book_title.clone(),
+//             data: self.data.clone(),
+//         }
+//     }
+// }
