@@ -21,3 +21,18 @@ Be sure to have a Pulsar server running as standalone on your machine, following
 Then run the project with
 
     RUST_LOG=info cargo run
+
+## What I learned
+
+You can start an asynchronous function by spawning a task like so:
+
+```rust
+let handle = tokio::task::spawn(some_async_function_that_returns_a_result());
+```
+
+The job works and you can call other functions.
+You can handle the result at the bottom of `main()`:
+
+```rust
+handle.await??;
+```
