@@ -11,6 +11,12 @@ pub struct Line {
     pub data: String,
 }
 
+impl Line {
+    pub fn is_last_line(&self) -> bool {
+        self.data == "done_streaming"
+    }
+}
+
 impl SerializeMessage for Line {
     fn serialize_message(input: Self) -> Result<producer::Message, PulsarError> {
         let payload = serde_json::to_vec(&input).map_err(|e| PulsarError::Custom(e.to_string()))?;

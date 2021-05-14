@@ -18,6 +18,7 @@ use pulsar::{
 pub struct Book {
     title: String,
     lines: Vec<Line>,
+    finished: bool,
 }
 
 pub struct BookConsumer {
@@ -48,6 +49,8 @@ impl BookConsumer {
     }
 
     pub async fn start(mut self) -> Result<()> {
+        info!("[consumer] Starting consuming topics…");
+
         while let Some(msg) = self.consumer.try_next().await? {
             trace!("metadata: {:?}", msg.metadata());
             let line = msg.deserialize()?;
@@ -56,9 +59,35 @@ impl BookConsumer {
             if line.id % 500 == 0 {
                 info!("Received {} lines of {}", line.id, line.book_title);
             }
+
+            if self.all_books_are_finished() {
+                self.finishing_statement();
+                return Ok(());
+            }
+
             self.process_line(line);
         }
         Ok(())
+    }
+
+    fn all_books_are_finished(&self) -> bool {
+        if self.books.len() == 0 {
+            return false;
+        }
+        for book in self.books.iter() {
+            if !book.finished {
+                return false;
+            }
+        }
+        info!("[consumer] all books are finished!");
+
+        true
+    }
+
+    fn finishing_statement(&self) {
+        for book in self.books.iter() {
+            info!("{} has {} lines", book.title, book.lines.len());
+        }
     }
 
     pub fn process_line(&mut self, line: Line) {
@@ -68,6 +97,11 @@ impl BookConsumer {
         // if the book is already present
         for book in self.books.iter_mut() {
             if book.title == title {
+                if line.is_last_line() {
+                    book.finished = true;
+                    return;
+                }
+
                 book.lines.push(line);
                 return;
             }
@@ -76,6 +110,10 @@ impl BookConsumer {
         // Else, create a new book
         let mut lines = Vec::new();
         lines.push(line);
-        self.books.push(Book { title, lines });
+        self.books.push(Book {
+            title,
+            lines,
+            finished: false,
+        });
     }
 }

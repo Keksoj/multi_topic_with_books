@@ -47,15 +47,17 @@ impl BookProducer {
 
     pub async fn stream_book(mut self) -> Result<()> {
         let path = format!("books/{}", self.book_title);
-        let file = File::open(path).context("Cannot not open file").unwrap();
+        let file = File::open(path).context("Cannot not open file")?;
 
         let bufreader = BufReader::new(file);
         let mut line_count = 0usize;
+
+        // stream line by line
         for line in bufreader.lines() {
             let line = Line {
                 id: line_count,
                 book_title: self.book_title.clone(),
-                data: line.unwrap().clone(),
+                data: line?.clone(),
             };
             if line_count % 1000 == 0 {
                 info!(
@@ -65,9 +67,19 @@ impl BookProducer {
             }
             debug!("[producer] Sending line: {}", line);
             trace!("[producer] the content: {}", line.data);
-            self.producer.send(line).await.unwrap();
+            self.producer.send(line).await?;
             line_count += 1;
         }
+
+        // Send a finish message
+        self.producer
+            .send(Line {
+                id: line_count,
+                book_title: self.book_title.clone(),
+                data: "done_streaming".to_string(),
+            })
+            .await?;
+
         info!("[producer] Done streaming {}!", self.book_title);
 
         Ok(())
