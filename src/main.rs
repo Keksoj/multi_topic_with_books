@@ -1,5 +1,5 @@
 use anyhow::Result;
-use futures::TryStreamExt;
+use futures::TryStreamExt;use futures::future::join_all;
 use log::{debug, info};
 use multi_topic_with_books::{
     book_consumer::BookConsumer,
@@ -14,21 +14,21 @@ async fn main() -> Result<()> {
     env_logger::init();
 
     // create book producers and futures
-    // let mut futures = Vec::new();
+    let mut book_stream_handles = Vec::new();
     for book_title in BOOK_TITLES.iter() {
         let producer = BookProducer::new(book_title).await?;
-        let future = producer.stream_book();
-        future.await?;
+        let book_stream_handle = tokio::task::spawn(producer.stream_book());
+        book_stream_handles.push(book_stream_handle);
     }
 
-    let mut book_consumer = BookConsumer::new(&BOOK_TITLES).await?;
+    let book_consumer = BookConsumer::new(&BOOK_TITLES).await?;
     // listen to the topics
-    while let Some(msg) = book_consumer.consumer.try_next().await? {
-        debug!("metadata: {:?}", msg.metadata());
-        let line = msg.deserialize()?;
-        book_consumer.consumer.ack(&msg).await?;
-        info!("[consumer] received a line: {}", line);
-        book_consumer.process_line(line);
-    }
+    let receive_books_handle = tokio::task::spawn(book_consumer.start());
+
+
+
+    // Check for errors by awaiting all tasks
+    join_all(book_stream_handles).await;
+    receive_books_handle.await??;
     Ok(())
 }

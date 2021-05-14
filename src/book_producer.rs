@@ -1,7 +1,7 @@
 use crate::{format_topic_for, line::Line, PULSAR_ADDRESS};
 use anyhow::{Context, Result};
 use futures::Future;
-use log::{debug, info};
+use log::{debug, info, trace};
 use pulsar::{
     message::proto,
     producer,
@@ -47,7 +47,7 @@ impl BookProducer {
 
     pub async fn stream_book(mut self) -> Result<()> {
         let path = format!("books/{}", self.book_title);
-        let file = File::open(path).context("Cannot not open file")?;
+        let file = File::open(path).context("Cannot not open file").unwrap();
 
         let bufreader = BufReader::new(file);
         let mut line_count = 0usize;
@@ -55,18 +55,21 @@ impl BookProducer {
             let line = Line {
                 id: line_count,
                 book_title: self.book_title.clone(),
-                data: line?.clone(),
+                data: line.unwrap().clone(),
             };
-            info!("[producer] Sending line: {}", line);
-            debug!("[producer] the content: {}", line.data);
-            self.producer.send(line).await?;
+            if line_count % 1000 == 0 {
+                info!(
+                    "[producer] Streamed {} lines of {}",
+                    line_count, self.book_title
+                );
+            }
+            debug!("[producer] Sending line: {}", line);
+            trace!("[producer] the content: {}", line.data);
+            self.producer.send(line).await.unwrap();
             line_count += 1;
         }
-        Ok(())
-    }
+        info!("[producer] Done streaming {}!", self.book_title);
 
-    pub fn return_future(self) -> impl Future {
-        let future = self.stream_book();
-        future
+        Ok(())
     }
 }

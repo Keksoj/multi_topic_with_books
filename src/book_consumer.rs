@@ -1,5 +1,8 @@
 use crate::{line::Line, PULSAR_ADDRESS};
-use anyhow::Result;
+use anyhow::{Context, Result};
+use futures::TryStreamExt;
+use log::{debug, info, trace};
+
 // use log::{debug, error, info};
 use pulsar::{
     // message::proto,
@@ -42,6 +45,20 @@ impl BookConsumer {
             books: Vec::new(),
             consumer,
         })
+    }
+
+    pub async fn start(mut self) -> Result<()> {
+        while let Some(msg) = self.consumer.try_next().await? {
+            trace!("metadata: {:?}", msg.metadata());
+            let line = msg.deserialize()?;
+            self.consumer.ack(&msg).await?;
+            debug!("[consumer] received a line: {}", line);
+            if line.id % 500 == 0 {
+                info!("Received {} lines of {}", line.id, line.book_title);
+            }
+            self.process_line(line);
+        }
+        Ok(())
     }
 
     pub fn process_line(&mut self, line: Line) {
